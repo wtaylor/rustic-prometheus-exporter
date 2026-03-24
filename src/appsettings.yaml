@@ -1,0 +1,10 @@
+http:
+  listen: 0.0.0.0:8080
+restic:
+  default_target_credentials:
+    rest:
+      username: restic
+      password: restic
+  repositories:
+  - url: rest:http://restic.local/my-repo
+    password: restic
