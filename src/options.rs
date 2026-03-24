@@ -1,19 +1,43 @@
+use std::net::SocketAddr;
+
+use serde::Deserialize;
+
+#[derive(Debug, Deserialize)]
 pub struct AppOptions {
-    http: HttpOptions,
-    restic: ResticOptions,
+    pub http: HttpOptions,
+    pub restic: ResticOptions,
 }
 
+#[derive(Debug, Deserialize)]
 pub struct HttpOptions {
-    listen: String,
+    pub listen: SocketAddr,
 }
 
+#[derive(Debug, Deserialize)]
 pub struct ResticOptions {
-    repositories: Vec<RepositoryOptions>,
+    pub default_target_credentials: Option<DefaultTargetCredentialsOptions>,
+    pub repositories: Vec<RepositoryOptions>,
 }
 
+#[derive(Debug, Deserialize)]
 pub struct RepositoryOptions {
-    url: String,
-    credential: CredentialOptions,
+    pub url: String,
+    pub password: String,
+    pub target_credentials: Option<CredentialOptions>,
 }
 
-pub struct CredentialOptions {}
+#[derive(Debug, Deserialize)]
+pub struct DefaultTargetCredentialsOptions {
+    pub rest: Option<RestCredentialOptions>,
+}
+
+#[derive(Debug, Deserialize)]
+pub enum CredentialOptions {
+    Rest(RestCredentialOptions),
+}
+
+#[derive(Debug, Deserialize)]
+pub struct RestCredentialOptions {
+    pub username: String,
+    pub password: String,
+}

@@ -1,0 +1,5 @@
+formatter:
+  type: basic
+  indentless_arrays: true
+  eof_newline: true
+  drop_merge_tag: true
