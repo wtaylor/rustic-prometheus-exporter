@@ -4,9 +4,13 @@ use axum::{Router, extract::State, routing::get};
 use clap::{Parser, Subcommand};
 use config::{Config, File};
 use metrics_exporter_prometheus::{PrometheusBuilder, PrometheusHandle};
+use tokio::{signal, task};
+use tokio_util::sync::CancellationToken;
+use tracing::info;
 
 use crate::options::AppOptions;
 
+mod collector_scheduler;
 mod options;
 
 #[derive(Parser)]
@@ -16,7 +20,7 @@ struct Cli {
     #[arg(short, long, value_name = "FILE")]
     config: PathBuf,
 
-    /// Subcommant to run, use -h to see available commands
+    /// Subcommand to run, use -h to see available commands
     #[command(subcommand)]
     command: Option<Command>,
 }
@@ -34,7 +38,13 @@ struct AppState {
 
 #[tokio::main]
 async fn main() {
+    tracing_subscriber::fmt().init();
+
+    let shutdown_token = CancellationToken::new();
+
     let cli = Cli::parse();
+
+    info!("starting up exporter");
 
     let settings_monitor = Config::builder()
         .add_source(File::from(cli.config))
@@ -55,9 +65,48 @@ async fn main() {
         .await
         .unwrap();
 
-    axum::serve(listener, app).await.unwrap();
+    info!("listening on {}", settings.http.listen);
+    info!(
+        "metrics endpoint is available at http://{}/metrics",
+        settings.http.listen
+    );
+
+    let collector_worker_task =
+        task::spawn(collector_scheduler::start(settings, shutdown_token.clone()));
+
+    axum::serve(listener, app)
+        .with_graceful_shutdown(shutdown_signal(shutdown_token.clone()))
+        .await
+        .unwrap();
 }
 
 async fn metrics_handler(State(state): State<AppState>) -> String {
     state.metrics_handle.render()
+}
+
+async fn shutdown_signal(cancellation_token: CancellationToken) {
+    let ctrl_c = async {
+        signal::ctrl_c()
+            .await
+            .expect("failed to install Ctrl+C handler");
+    };
+
+    #[cfg(unix)]
+    let terminate = async {
+        signal::unix::signal(signal::unix::SignalKind::terminate())
+            .expect("failed to install signal handler")
+            .recv()
+            .await;
+    };
+
+    #[cfg(not(unix))]
+    let terminate = std::future::pending::<()>();
+
+    tokio::select! {
+        _ = ctrl_c => {},
+        _ = terminate => {},
+    }
+
+    info!("shutdown signal received, shutting down");
+    cancellation_token.cancel();
 }

@@ -1,10 +1,12 @@
 http:
   listen: 0.0.0.0:8080
 restic:
+  cache_dir: /tmp/rpe-cache
   default_target_credentials:
     rest:
       username: restic
       password: restic
   repositories:
-  - url: rest:http://restic.local/my-repo
+  - name: my-repo
+    url: /tmp/my-repo
     password: restic
