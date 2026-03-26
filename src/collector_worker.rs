@@ -1,5 +1,11 @@
-use kameo::{Actor, error::Infallible};
+use kameo::{
+    Actor,
+    error::Infallible,
+    prelude::{Context, Message},
+};
+use metrics::counter;
 use rustic_core::{Credentials, OpenStatus, Repository};
+use tracing::info;
 
 use crate::options::{AppOptions, RepositoryOptions};
 
@@ -84,4 +90,24 @@ fn get_repository(
     }
 
     Repository::new(&repo_options, &backend).unwrap()
+}
+
+pub struct CollectMetrics;
+
+impl Message<CollectMetrics> for CollectorWorker {
+    type Reply = ();
+
+    async fn handle(
+        &mut self,
+        _msg: CollectMetrics,
+        _ctx: &mut Context<Self, Self::Reply>,
+    ) -> Self::Reply {
+        info!("Getting all snapshots");
+        let snapshots = self.repository.get_all_snapshots().unwrap();
+
+        info!("Found {} snapshots", snapshots.len());
+
+        counter!("restic.snapshot_count", "repo" => format!("{}", self.repository_options.name))
+            .absolute(snapshots.len() as u64);
+    }
 }
