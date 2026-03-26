@@ -1,12 +1,38 @@
 http:
   listen: 0.0.0.0:8080
+collector:
+  interval: 1h
+  # metrics:
+  # - check_success
+  # - locks_total
+  # - scrape_duration_seconds
+  # - size_total
+  # - uncompressed_size_total
+  # - compression_ration
+  # - blob_count_total
+  # - snapshots_total
+  # - backup_timestamp
+  # - backup_snapshots_total
+  # - backup_files_total
+  # - backup_size_total
+  # - backup_files_new
+  # - backup_files_changed
+  # - backup_files_unmodified
+  # - backup_dirs_new
+  # - backup_dirs_changed
+  # - backup_dirs_unmodified
+  # - backup_data_added_bytes
+  # - backup_duration_seconds
 restic:
   cache_dir: /tmp/rpe-cache
-  default_target_credentials:
-    rest:
-      username: restic
-      password: restic
+  defaults:
+    password: restic
+    backend_options:
+      rest:
+        username: restic
+        password: restic
   repositories:
   - name: my-repo
     url: /tmp/my-repo
-    password: restic
+  - name: my-repo2
+    url: /tmp/my-repo2

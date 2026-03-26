@@ -3,14 +3,19 @@ use std::path::PathBuf;
 use axum::{Router, extract::State, routing::get};
 use clap::{Parser, Subcommand};
 use config::{Config, File};
+use kameo::actor::{ActorRef, Spawn};
 use metrics_exporter_prometheus::{PrometheusBuilder, PrometheusHandle};
-use tokio::{signal, task};
+use tokio::signal;
 use tokio_util::sync::CancellationToken;
 use tracing::info;
 
-use crate::options::AppOptions;
+use crate::{
+    collector_scheduler::{CollectorScheduler, CollectorSchedulerArgs},
+    options::AppOptions,
+};
 
 mod collector_scheduler;
+mod collector_worker;
 mod options;
 
 #[derive(Parser)]
@@ -52,7 +57,7 @@ async fn main() {
         .build()
         .unwrap();
 
-    let settings = settings_monitor.try_deserialize::<AppOptions>().unwrap();
+    let app_options = settings_monitor.try_deserialize::<AppOptions>().unwrap();
 
     let metrics_handle = PrometheusBuilder::new().install_recorder().unwrap();
     let state = AppState { metrics_handle };
@@ -61,21 +66,22 @@ async fn main() {
         .route("/metrics", get(metrics_handler))
         .with_state(state);
 
-    let listener = tokio::net::TcpListener::bind(settings.http.listen)
+    let listener = tokio::net::TcpListener::bind(app_options.http.listen)
         .await
         .unwrap();
 
-    info!("listening on {}", settings.http.listen);
+    info!("listening on {}", app_options.http.listen);
     info!(
         "metrics endpoint is available at http://{}/metrics",
-        settings.http.listen
+        app_options.http.listen
     );
 
-    let collector_worker_task =
-        task::spawn(collector_scheduler::start(settings, shutdown_token.clone()));
+    let collector_scheduler = CollectorScheduler::spawn(CollectorSchedulerArgs {
+        app_options: app_options.clone(),
+    });
 
     axum::serve(listener, app)
-        .with_graceful_shutdown(shutdown_signal(shutdown_token.clone()))
+        .with_graceful_shutdown(shutdown_signal(shutdown_token.clone(), collector_scheduler))
         .await
         .unwrap();
 }
@@ -84,7 +90,10 @@ async fn metrics_handler(State(state): State<AppState>) -> String {
     state.metrics_handle.render()
 }
 
-async fn shutdown_signal(cancellation_token: CancellationToken) {
+async fn shutdown_signal(
+    cancellation_token: CancellationToken,
+    scheduler_ref: ActorRef<CollectorScheduler>,
+) {
     let ctrl_c = async {
         signal::ctrl_c()
             .await
@@ -109,4 +118,5 @@ async fn shutdown_signal(cancellation_token: CancellationToken) {
 
     info!("shutdown signal received, shutting down");
     cancellation_token.cancel();
+    scheduler_ref.kill();
 }
