@@ -1,43 +1,47 @@
-use std::net::SocketAddr;
+use std::{
+    collections::{BTreeMap, HashMap},
+    net::SocketAddr,
+    path::PathBuf,
+    time::Duration,
+};
 
 use serde::Deserialize;
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct AppOptions {
     pub http: HttpOptions,
     pub restic: ResticOptions,
+    pub collector: CollectorOptions,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct HttpOptions {
     pub listen: SocketAddr,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct ResticOptions {
-    pub default_target_credentials: Option<DefaultTargetCredentialsOptions>,
+    pub cache_dir: Option<PathBuf>,
+    pub defaults: Option<ResticDefaultOptions>,
     pub repositories: Vec<RepositoryOptions>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
+pub struct ResticDefaultOptions {
+    pub password: Option<String>,
+    pub backend_options: Option<HashMap<String, BTreeMap<String, String>>>,
+}
+
+#[derive(Debug, Deserialize, Clone)]
 pub struct RepositoryOptions {
+    pub name: String,
     pub url: String,
-    pub password: String,
-    pub target_credentials: Option<CredentialOptions>,
+    pub password: Option<String>,
+    pub backend_options: Option<BTreeMap<String, String>>,
 }
 
-#[derive(Debug, Deserialize)]
-pub struct DefaultTargetCredentialsOptions {
-    pub rest: Option<RestCredentialOptions>,
-}
-
-#[derive(Debug, Deserialize)]
-pub enum CredentialOptions {
-    Rest(RestCredentialOptions),
-}
-
-#[derive(Debug, Deserialize)]
-pub struct RestCredentialOptions {
-    pub username: String,
-    pub password: String,
+#[derive(Debug, Deserialize, Clone)]
+pub struct CollectorOptions {
+    #[serde(with = "humantime_serde")]
+    pub interval: Duration,
 }
