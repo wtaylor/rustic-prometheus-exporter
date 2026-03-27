@@ -5,7 +5,7 @@ use kameo::{
     actor::{ActorRef, Spawn},
     error::Infallible,
 };
-use tokio::time;
+use tokio::{task::JoinHandle, time};
 use tracing::info;
 
 use crate::{
@@ -18,8 +18,8 @@ pub struct CollectorSchedulerArgs {
 }
 
 pub struct CollectorScheduler {
-    app_options: AppOptions,
     workers: HashMap<String, ActorRef<CollectorWorker>>,
+    _collect_schedule: JoinHandle<()>,
 }
 
 impl Actor for CollectorScheduler {
@@ -28,7 +28,7 @@ impl Actor for CollectorScheduler {
 
     async fn on_start(
         args: Self::Args,
-        actor_ref: kameo::prelude::ActorRef<Self>,
+        _actor_ref: kameo::prelude::ActorRef<Self>,
     ) -> Result<Self, Self::Error> {
         info!("Starting collector scheduler");
         let workers = args
@@ -59,8 +59,8 @@ impl Actor for CollectorScheduler {
         });
 
         Ok(Self {
-            app_options: args.app_options,
             workers,
+            _collect_schedule: collect_schedule,
         })
     }
 

@@ -38,36 +38,10 @@ pub struct RepositoryOptions {
     pub url: String,
     pub password: Option<String>,
     pub backend_options: Option<BTreeMap<String, String>>,
-    pub additional_labels: Option<HashMap<String, String>>,
 }
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct CollectorOptions {
     #[serde(with = "humantime_serde")]
     pub interval: Duration,
-    pub metrics: Option<Vec<MetricOption>>,
-}
-
-#[derive(Debug, Deserialize, Clone)]
-pub enum MetricOption {
-    CheckSuccess,
-    LocksTotal,
-    ScrapeDurationSeconds,
-    SizeTotal,
-    UncompressedSizeTotal,
-    CompressionRation,
-    BlobCountTotal,
-    SnapshotsTotal,
-    BackupTimestamp,
-    BackupSnapshotsTotal,
-    BackupFilesTotal,
-    BackupSizeTotal,
-    BackupFilesNew,
-    BackupFilesChanged,
-    BackupFilesUnmodified,
-    BackupDirsNew,
-    BackupDirsChanged,
-    BackupDirsUnmodified,
-    BackupDataAddedBytes,
-    BackupDurationSeconds,
 }
