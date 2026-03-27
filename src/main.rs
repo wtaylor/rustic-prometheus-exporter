@@ -16,6 +16,7 @@ use crate::{
 
 mod collector_scheduler;
 mod collector_worker;
+mod metric_store;
 mod options;
 
 #[derive(Parser)]

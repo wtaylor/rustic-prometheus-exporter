@@ -3,11 +3,13 @@ use kameo::{
     error::Infallible,
     prelude::{Context, Message},
 };
-use metrics::{Counter, counter};
 use rustic_core::{Credentials, OpenStatus, Repository};
 use tracing::info;
 
-use crate::options::{AppOptions, RepositoryOptions};
+use crate::{
+    metric_store::MetricStore,
+    options::{AppOptions, RepositoryOptions},
+};
 
 pub struct CollectorWorkerArgs {
     pub app_options: AppOptions,
@@ -16,7 +18,7 @@ pub struct CollectorWorkerArgs {
 
 pub struct CollectorWorker {
     pub repository: Repository<OpenStatus>,
-    repository_metric_handles: RepositoryMetricHandles,
+    metric_store: MetricStore,
 }
 
 impl Actor for CollectorWorker {
@@ -37,10 +39,7 @@ impl Actor for CollectorWorker {
 
         Ok(Self {
             repository,
-            repository_metric_handles: RepositoryMetricHandles {
-                common_labels,
-                ..Default::default()
-            },
+            metric_store: MetricStore::new(common_labels),
         })
     }
 }
@@ -97,24 +96,6 @@ fn get_repository(
     Repository::new(&repo_options, &backend).unwrap()
 }
 
-#[derive(Default)]
-struct RepositoryMetricHandles {
-    common_labels: Vec<(String, String)>,
-    total_snapshots: Option<Counter>,
-}
-
-impl RepositoryMetricHandles {
-    fn set_total_snapshots(&mut self, value: u64) {
-        if self.total_snapshots.is_none() {
-            let counter = counter!("restic.snapshots_total", &self.common_labels);
-            counter.absolute(value);
-            self.total_snapshots = Some(counter);
-        } else {
-            self.total_snapshots.as_ref().unwrap().absolute(value);
-        }
-    }
-}
-
 pub struct CollectMetrics;
 
 impl Message<CollectMetrics> for CollectorWorker {
@@ -130,7 +111,7 @@ impl Message<CollectMetrics> for CollectorWorker {
 
         info!("Found {} snapshots", snapshots.len());
 
-        self.repository_metric_handles
+        self.metric_store
             .set_total_snapshots(snapshots.len() as u64);
     }
 }

@@ -1,7 +1,7 @@
 http:
   listen: 0.0.0.0:8080
 collector:
-  interval: 20s
+  interval: 1h
 restic:
   cache_dir: /tmp/rpe-cache
   defaults:
