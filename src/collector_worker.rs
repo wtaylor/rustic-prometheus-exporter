@@ -1,9 +1,11 @@
+use std::time::SystemTime;
+
 use kameo::{
     Actor,
     error::Infallible,
     prelude::{Context, Message},
 };
-use rustic_core::{Credentials, OpenStatus, Repository};
+use rustic_core::{CheckOptions, Credentials, OpenStatus, Repository};
 use tracing::info;
 
 use crate::{
@@ -106,12 +108,43 @@ impl Message<CollectMetrics> for CollectorWorker {
         _msg: CollectMetrics,
         _ctx: &mut Context<Self, Self::Reply>,
     ) -> Self::Reply {
-        info!("Getting all snapshots");
+        let scrape_start = SystemTime::now();
+
+        info!("Starting scrape");
+        info!("Collecting snapshots");
         let snapshots = self.repository.get_all_snapshots().unwrap();
+        info!("Collecting file info");
+        let file_info = self.repository.infos_files().unwrap().repo;
+        info!("Collecting index info");
+        let infos_index = self.repository.infos_index().unwrap();
+        info!("Running integrity checks");
+        let repo_check_result = self.repository.check(CheckOptions::default()).unwrap();
 
-        info!("Found {} snapshots", snapshots.len());
+        // let mut file_size_total = 0;
+        // for file in file_info {
+        //     file_size_total += file.size;
+        // }
 
+        let mut blob_count_total = 0;
+        let mut blob_size_total = 0;
+        let mut blob_size_uncompressed_total = 0;
+        for blob in infos_index.blobs {
+            blob_count_total += blob.count;
+            blob_size_total += blob.size;
+            blob_size_uncompressed_total += blob.data_size;
+        }
+
+        self.metric_store.set_check_success(repo_check_result);
+        self.metric_store.set_total_snapshots(snapshots.len());
+        self.metric_store.set_size_total(blob_size_total);
         self.metric_store
-            .set_total_snapshots(snapshots.len() as u64);
+            .set_uncompressed_size_total(blob_size_uncompressed_total);
+        self.metric_store
+            .set_compression_ratio(blob_size_uncompressed_total as f32 / blob_size_total as f32);
+        self.metric_store.set_blob_count_total(blob_count_total);
+
+        let scrape_duration = scrape_start.elapsed().unwrap().as_secs_f32();
+        self.metric_store
+            .set_scrape_duration_seconds(scrape_duration);
     }
 }
