@@ -1,0 +1,9 @@
+branches: [main]
+plugins:
+- - "@semantic-release/commit-analyzer"
+- - preset: "conventionalcommits"
+- "@semantic-release/release-notes-generator"
+- - "@semantic-release/exec"
+- - prepareCmd: "./scripts/prepare.sh ${nextRelease.version}"
+- - publishCmd: "./scripts/publish.sh ${nextRelease.version}"
+- "@semantic-release/github"
