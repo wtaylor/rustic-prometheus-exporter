@@ -9,14 +9,17 @@ env:
 jobs:
   build_binary:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
     steps:
     - uses: actions/checkout@v6
     - uses: jdx/mise-action@v3
+      with:
+        install_args: "rust"
     - run: mise run cargo:build
   build_docker:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v6
     - uses: jdx/mise-action@v3
+      with:
+        install: false
     - run: mise run docker:build
