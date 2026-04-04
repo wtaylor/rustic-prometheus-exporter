@@ -75,6 +75,8 @@ jobs:
       with:
         cache_key: bust-mise-build-${{ matrix.arch }}
         install_args: "rust"
+    - name: Install arch target
+      run: rustup target add ${{ matrix.arch }}
     - name: Run cargo build
       run: mise run cargo:build --release --target ${{ matrix.arch }}
     - name: Create archive
