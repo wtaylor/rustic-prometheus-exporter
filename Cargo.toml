@@ -2,6 +2,12 @@
 name = "rustic-prometheus-exporter"
 version = "0.0.1"
 edition = "2024"
+authors = ["William Taylor"]
+license = "MIT OR Apache-2.0"
+
+[package.metadata.binstall.signing]
+algorithm = "minisign"
+pubkey = "RWRkYd0KpuFAJrAXG06LIDn6rZEjuDV3c5d/mzuOXZd/b2Cv/9zZroAs"
 
 [dependencies]
 tokio = { version = "1.50.0", features = ["full"] }

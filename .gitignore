@@ -1,4 +1,6 @@
-
+.version
+dist/
+signing.key
 
 # Added by cargo
 

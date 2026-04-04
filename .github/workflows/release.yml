@@ -2,17 +2,82 @@ name: release
 on:
   workflow_dispatch:
   push:
-    branches: ["main"]
+    branches: ["main", "feat/test-release-process"]
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 env:
   MISE_EXPERIMENTAL: true
 jobs:
+  get-release-version:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+    - uses: actions/checkout@v6
+    - uses: jdx/mise-action@v3
+    - id: version_step
+      run: mise run semantic-release:get-next-version >> "$GITHUB_OUTPUT"
   release:
+    needs: build
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
     - uses: actions/checkout@v6
     - uses: jdx/mise-action@v3
     - run: mise run ci:release
+  build:
+    name: Build binary
+    env:
+      CARGO_REGISTRIES_CRATES_IO_PROTOCOL: sparse
+      CARGO_PROFILE_RELEASE_CODEGEN_UNITS: 4
+      CARGO_PROFILE_DEV_CODEGEN_UNITS: 4
+      CARGO_PROFILE_CHECK_ONLY_CODEGEN_UNITS: 4
+    needs: get-release-version
+    strategy:
+      matrix:
+        include:
+        - arch: x86_64-unknown-linux-gnu
+          runner: ubuntu-latest
+        - arch: aarch64-unknown-linux-gnu
+          runner: ubuntu-24.04-arm
+        - arch: x86_64-unknown-linux-musl
+          runner: ubuntu-latest
+        - arch: aarch64-unknown-linux-musl
+          runner: ubuntu-24.04-arm
+        - arch: x86_64-apple-darwin
+          runner: macos-26-intel
+        - arch: aarch64-apple-darwin
+          runner: macos-latest
+        - arch: x86_64-pc-windows-msvc
+          runner: windows-latest
+        - arch: aarch64-pc-windows-msvc
+          runner: windows-11-arm
+    runs-on: ${{ matrix.runner }}
+    steps:
+    - name: Checkout sources
+      uses: actions/checkout@v6
+    - name: Cache cargo assets
+      id: cache
+      uses: actions/cache@v5
+      with:
+        path: |
+          ~/.cargo/bin/
+          ~/.cargo/registry/index/
+          ~/.cargo/registry/cache/
+          ~/.cargo/git/db/
+          target/
+        key: cargo-build-${{ matrix.arch }}-${{ hashFiles('**/Cargo.lock') }}
+    - uses: jdx/mise-action@v3
+      with:
+        cache_key: mise-build-${{ matrix.arch }}
+    - name: Run cargo build
+      run: mise run cargo:build --release --target ${{ matrix.arch }}
+    - name: Create archive
+      run: mise run package:archive ${{ matrix.arch }}
+    - name: Sign archive
+      run: mise run package:sign
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v6
+      with:
+        name: binary-${{ matrix.arch }}
+        path: dist/*
