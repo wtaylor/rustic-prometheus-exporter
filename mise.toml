@@ -49,9 +49,3 @@ run = """
 semantic-release --dry-run 2>/dev/null | grep "the next release version is" | sed 's/^.* the next release version is //' > .version
 cat .version
 """
-
-[tasks."ci:pull_request"]
-depends = ["cargo:build", "docker:build"]
-
-[tasks."ci:release"]
-depends = ["semantic-release:release"]
