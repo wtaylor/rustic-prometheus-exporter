@@ -6,6 +6,7 @@ concurrency:
   cancel-in-progress: true
 env:
   MISE_EXPERIMENTAL: true
+  MISE_AUTO_INSTALL: false
 jobs:
   build_binary:
     runs-on: ubuntu-latest

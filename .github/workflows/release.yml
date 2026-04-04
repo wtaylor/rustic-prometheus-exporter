@@ -8,6 +8,7 @@ concurrency:
   cancel-in-progress: true
 env:
   MISE_EXPERIMENTAL: true
+  MISE_AUTO_INSTALL: false
 jobs:
   get-release-version:
     runs-on: ubuntu-latest
