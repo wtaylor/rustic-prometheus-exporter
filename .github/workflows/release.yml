@@ -110,7 +110,7 @@ jobs:
         install_args: "rust"
     - name: Install musl-tools
       if: contains(matrix.arch, 'musl') && contains(matrix.runner, 'ubuntu')
-      run: apt-get install musl-tools
+      run: sudo apt-get install musl-tools
     - name: Install arch target
       run: rustup target add ${{ matrix.arch }}
     - name: Run cargo build
