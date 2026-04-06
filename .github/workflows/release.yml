@@ -59,8 +59,13 @@ jobs:
         push: false
         tags: rustic-prometheus-exporter:local
         outputs: type=docker,dest=dist/docker/rust-prometheus-exporter.tar
-        cache-from: type=registry,ref=wtaylor/rustic-prometheus-exporter:buildcache
-        cache-to: type=registry,ref=wtaylor/rustic-prometheus-exporter:buildcache,mode=max
+        cache-from: type=registry,ref=ghcr.io/wtaylor/rustic-prometheus-exporter:buildcache
+        cache-to: type=registry,ref=ghcr.io/wtaylor/rustic-prometheus-exporter:buildcache,mode=max
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v6
+      with:
+        name: container
+        path: dist/*
   build:
     name: Build binary
     env:
