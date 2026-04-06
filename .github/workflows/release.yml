@@ -39,6 +39,9 @@ jobs:
   build-docker:
     name: Build container
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
     needs: get-release-version
     steps:
     - uses: actions/checkout@v6
