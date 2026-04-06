@@ -37,7 +37,7 @@ jobs:
         MINISIGN_SIGNING_KEY: ${{ secrets.MINISIGN_SIGNING_KEY }}
     - run: mise run ci:release
   build-docker:
-    name: Build docker image
+    name: Build container
     runs-on: ubuntu-latest
     needs: get-release-version
     steps:
@@ -109,7 +109,7 @@ jobs:
         cache_key: bust-mise-build-${{ matrix.arch }}
         install_args: "rust"
     - name: Install musl-tools
-      if: contains(matrix.arch, 'musl') && contains(matrix.arch, 'ubuntu')
+      if: contains(matrix.arch, 'musl') && contains(matrix.runner, 'ubuntu')
       run: apt-get install musl-tools
     - name: Install arch target
       run: rustup target add ${{ matrix.arch }}
