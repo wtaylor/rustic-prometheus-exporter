@@ -38,6 +38,9 @@ run = "podman build -t rustic-prometheus-exporter:local ."
 [tasks."docker:build"]
 run = "docker build -t rustic-prometheus-exporter:local -f Containerfile ."
 
+[tasks."docker:build-multiarch"]
+run = "docker buildx build -t rustic-prometheus-exporter:local -f Containerfile --platform linux/arm/v7,linux/arm/v8,linux/amd64 ."
+
 [tasks."semantic-release:release"]
 run = "npx --yes --package semantic-release@25.0.3 semantic-release"
 

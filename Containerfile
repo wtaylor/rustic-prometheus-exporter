@@ -1,4 +1,8 @@
 FROM debian:trixie-20260223-slim AS runtime-base
+LABEL org.opencontainers.image.source=https://github.com/wtaylor/rustic-prometheus-exporter
+LABEL org.opencontainers.image.description="A Prometheus exporter built on Rustic"
+LABEL org.opencontainers.image.licenses=MIT
+
 FROM runtime-base AS base
 RUN apt-get update && apt-get install -y --no-install-recommends \
   build-essential \
