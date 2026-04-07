@@ -144,6 +144,11 @@ jobs:
     - run: mise run package:sign
       env:
         MINISIGN_SIGNING_KEY: ${{ secrets.MINISIGN_SIGNING_KEY }}
+    - name: Upload signatures
+      uses: actions/upload-artifact@v6
+      with:
+        name: binary-signatures
+        path: dist/*.minisig
     - name: publish
       run: |
         gh release upload ${{ needs.release.outputs.tag_name }} ./dist/*
