@@ -2,7 +2,7 @@ name: release
 on:
   workflow_dispatch:
   push:
-    branches: ["main", "feat/test-release-process"]
+    branches: ["main"]
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -111,7 +111,7 @@ jobs:
         key: cargo-build-${{ matrix.arch }}-${{ hashFiles('**/Cargo.lock') }}
     - uses: jdx/mise-action@v4
       with:
-        cache_key: bust-mise-build-${{ matrix.arch }}
+        cache_key: mise-build-${{ matrix.arch }}
         install_args: "rust"
     - name: Install musl-tools
       if: contains(matrix.arch, 'musl') && contains(matrix.runner, 'ubuntu')
