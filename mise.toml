@@ -3,6 +3,9 @@ rust = "1.94.0"
 node = "24.14.1"
 minisign = "0.12"
 
+[settings]
+windows_default_inline_shell_args = "pwsh -NoProfile -NonInteractive -Command"
+
 [tasks."cargo:build"]
 run = "cargo build"
 
@@ -16,9 +19,11 @@ cd "./target/${usage_target}/release/"
 tar cv "rustic-prometheus-exporter" | gzip -9 > "../../../dist/rust-prometheus-exporter-${usage_target}.tar.gz"
 """
 run_windows = """
-mkdir dist
-cd "target/${env:usage_target}/release/"
-7zip a -mx9 "../../../dist/rust-prometheus-exporter-${env:usage_target}.zip" rust-prometheus-exporter.exe
+&{ \
+  md dist;\
+  cd "target/${env:usage_target}/release/";\
+  7z a -mx9 "../../../dist/rust-prometheus-exporter-${env:usage_target}.zip" rust-prometheus-exporter.exe;\
+}
 """
 
 [tasks."package:sign"]
