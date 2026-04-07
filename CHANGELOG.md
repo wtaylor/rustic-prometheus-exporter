@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.2](https://github.com/wtaylor/rustic-prometheus-exporter/compare/v0.1.1...v0.1.2) (2026-04-07)
+
+
+### Bug Fixes
+
+* fail to upload artifacts to release ([#10](https://github.com/wtaylor/rustic-prometheus-exporter/issues/10)) ([7ecf206](https://github.com/wtaylor/rustic-prometheus-exporter/commit/7ecf206684fb0a385f6359475beba5fb5a3de34f))
+
 ## [0.1.1](https://github.com/wtaylor/rustic-prometheus-exporter/compare/v0.1.0...v0.1.1) (2026-04-07)
 
 
