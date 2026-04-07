@@ -1,12 +1,34 @@
 [tools]
 rust = "1.94.0"
 node = "24.14.1"
-
-"npm:@semantic-release/git" = "latest"
-"npm:@semantic-release/exec" = "latest"
+minisign = "0.12"
 
 [tasks."cargo:build"]
 run = "cargo build"
+
+[tasks."package:archive"]
+usage = '''
+arg "<target>"
+'''
+run = """
+mkdir -p dist/
+cd "./target/${usage_target}/release/"
+tar cv "rustic-prometheus-exporter" | gzip -9 > "../../../dist/rust-prometheus-exporter-${usage_target}.tar.gz"
+"""
+run_windows = """
+mkdir dist
+cd "target/${env:usage_target}/release/"
+7zip a -mx9 "../../../dist/rust-prometheus-exporter-${env:usage_target}.zip" rust-prometheus-exporter.exe
+"""
+
+[tasks."package:sign"]
+run = """
+echo "untrusted comment: minisign encrypted secret key" > ~/rpe-minisign.key
+echo "$MINISIGN_SIGNING_KEY" >> ~/rpe-minisign.key
+minisign -S -W -s ~/rpe-minisign.key -m dist/*.zip
+minisign -S -W -s ~/rpe-minisign.key -m dist/*.tar.gz
+rm ~/rpe-minisign.key
+"""
 
 [tasks."podman:build"]
 run = "podman build -t rustic-prometheus-exporter:local ."
@@ -14,14 +36,5 @@ run = "podman build -t rustic-prometheus-exporter:local ."
 [tasks."docker:build"]
 run = "docker build -t rustic-prometheus-exporter:local -f Containerfile ."
 
-[tasks."semantic-release:release"]
-run = "npx --yes --package semantic-release@25.0.3 semantic-release"
-
-[tasks."semantic-release:dry-run"]
-run = "npx --yes --package semantic-release@25.0.3 semantic-release --dry-run"
-
-[tasks."ci:pull_request"]
-depends = ["cargo:build", "docker:build"]
-
-[tasks."ci:release"]
-depends = ["semantic-release:release"]
+[tasks."docker:build-multiarch"]
+run = "docker buildx build -t rustic-prometheus-exporter:local -f Containerfile --platform linux/arm/v7,linux/arm/v8,linux/amd64 ."
