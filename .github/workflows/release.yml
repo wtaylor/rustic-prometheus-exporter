@@ -132,6 +132,7 @@ jobs:
       contents: write
       packages: write
       issues: write
+      pull-requests: write
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v6
@@ -150,5 +151,7 @@ jobs:
         name: binary-signatures
         path: dist/*.minisig
     - name: publish
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         gh release upload ${{ needs.release.outputs.tag_name }} ./dist/*
