@@ -34,6 +34,7 @@ jobs:
       contents: read
       packages: write
     needs: [release]
+    if: ${{ needs.release.outputs.release_created }}
     steps:
     - uses: actions/checkout@v6
     - name: Set up Docker Buildx
@@ -61,7 +62,6 @@ jobs:
         name: container
         path: dist/*
     - name: Push to GHCR
-      if: ${{ needs.release.outputs.release_created }}
       run: |
         docker image tag rustic-prometheus-exporter:local ghcr.io/wtaylor/rustic-prometheus-exporter:latest
         docker image tag rustic-prometheus-exporter:local ghcr.io/wtaylor/rustic-prometheus-exporter:${{ needs.release.outputs.version }}
@@ -75,6 +75,7 @@ jobs:
       CARGO_PROFILE_CHECK_ONLY_CODEGEN_UNITS: 4
       RUSTUP_TOOLCHAIN: ${{ matrix.arch }}
     needs: [release]
+    if: ${{ needs.release.outputs.release_created }}
     strategy:
       matrix:
         include:
