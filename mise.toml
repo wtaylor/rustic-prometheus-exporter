@@ -1,8 +1,6 @@
 [tools]
 rust = "1.94.0"
 node = "24.14.1"
-"npm:semantic-release" = "25.0.3"
-"npm:@semantic-release/git" = "latest"
 minisign = "0.12"
 
 [tasks."cargo:build"]
@@ -40,15 +38,3 @@ run = "docker build -t rustic-prometheus-exporter:local -f Containerfile ."
 
 [tasks."docker:build-multiarch"]
 run = "docker buildx build -t rustic-prometheus-exporter:local -f Containerfile --platform linux/arm/v7,linux/arm/v8,linux/amd64 ."
-
-[tasks."semantic-release:release"]
-run = "npx --yes --package semantic-release@25.0.3 semantic-release"
-
-[tasks."semantic-release:dry-run"]
-run = "semantic-release --dry-run"
-
-[tasks."semantic-release:get-next-version"]
-run = """
-semantic-release --dry-run 2>/dev/null | grep "the next release version is" | sed 's/^.* the next release version is //' > .version
-cat .version
-"""
