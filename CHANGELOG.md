@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.1](https://github.com/wtaylor/rustic-prometheus-exporter/compare/v0.1.0...v0.1.1) (2026-04-07)
+
+
+### Bug Fixes
+
+* container image pushing ([#7](https://github.com/wtaylor/rustic-prometheus-exporter/issues/7)) ([8d31eca](https://github.com/wtaylor/rustic-prometheus-exporter/commit/8d31ecaf1d135ba0d175eaddd2cbbe12e8c652eb))
+* windows build not saved ([#9](https://github.com/wtaylor/rustic-prometheus-exporter/issues/9)) ([e881735](https://github.com/wtaylor/rustic-prometheus-exporter/commit/e88173549b6f69752066fcfaa0756be6c785ceb4))
+
 ## 0.1.0 (2026-04-07)
 
 
