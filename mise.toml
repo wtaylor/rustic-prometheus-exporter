@@ -21,7 +21,7 @@ tar cv "rustic-prometheus-exporter" | gzip -9 > "../../../dist/rust-prometheus-e
 run_windows = """
 &{ \
   md dist;\
-  cd "target/${env:usage_target}/release/;"\
+  cd "target/${env:usage_target}/release/";\
   7z a -mx9 "../../../dist/rust-prometheus-exporter-${env:usage_target}.zip" rust-prometheus-exporter.exe;\
 }
 """
