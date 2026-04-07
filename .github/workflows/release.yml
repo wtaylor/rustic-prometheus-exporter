@@ -51,8 +51,10 @@ jobs:
       with:
         context: .
         file: Containerfile
-        push: false
-        tags: rustic-prometheus-exporter:local
+        push: true
+        tags: |
+          ghcr.io/wtaylor/rustic-prometheus-exporter:latest
+          ghcr.io/wtaylor/rustic-prometheus-exporter:${{ needs.release.outputs.version }}
         outputs: type=docker,dest=dist/docker/rust-prometheus-exporter.tar
         cache-from: type=registry,ref=ghcr.io/wtaylor/rustic-prometheus-exporter:buildcache
         cache-to: type=registry,ref=ghcr.io/wtaylor/rustic-prometheus-exporter:buildcache,mode=max
@@ -61,11 +63,6 @@ jobs:
       with:
         name: container
         path: dist/*
-    - name: Push to GHCR
-      run: |
-        docker image tag rustic-prometheus-exporter:local ghcr.io/wtaylor/rustic-prometheus-exporter:latest
-        docker image tag rustic-prometheus-exporter:local ghcr.io/wtaylor/rustic-prometheus-exporter:${{ needs.release.outputs.version }}
-        docker image push -a ghcr.io/wtaylor/rustic-prometheus-exporter
   build:
     name: Build binaries
     env:
