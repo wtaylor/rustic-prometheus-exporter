@@ -18,6 +18,7 @@ mod collector_scheduler;
 mod collector_worker;
 mod metric_store;
 mod options;
+mod util;
 
 #[derive(Parser)]
 #[command(version, about, long_about = None)]

@@ -5,12 +5,13 @@ use kameo::{
     error::Infallible,
     prelude::{Context, Message},
 };
-use rustic_core::{CheckOptions, Credentials, OpenStatus, Repository};
+use rustic_core::{CheckOptions, OpenStatus, Repository};
 use tracing::info;
 
 use crate::{
     metric_store::MetricStore,
     options::{AppOptions, RepositoryOptions},
+    util::{get_credentials, get_repository},
 };
 
 pub struct CollectorWorkerArgs {
@@ -44,58 +45,6 @@ impl Actor for CollectorWorker {
             metric_store: MetricStore::new(common_labels),
         })
     }
-}
-
-fn get_credentials(
-    app_options: &AppOptions,
-    repository_options: &RepositoryOptions,
-) -> Credentials {
-    let password = app_options
-        .restic
-        .defaults
-        .as_ref()
-        .and_then(|d| d.password.as_ref())
-        .or(repository_options.password.as_ref())
-        .unwrap();
-    Credentials::password(password)
-}
-
-fn get_repository(
-    app_options: &AppOptions,
-    repository_options: &RepositoryOptions,
-) -> Repository<()> {
-    let backend_protocol = repository_options.url.split(':').next().unwrap_or("local");
-
-    let mut backend_options = app_options
-        .restic
-        .defaults
-        .as_ref()
-        .and_then(|d| d.backend_options.as_ref())
-        .and_then(|d| d.get(backend_protocol))
-        .and_then(|d| Some(d.clone()))
-        .unwrap_or_default();
-
-    if let Some(repo_backend_options) = repository_options.backend_options.clone() {
-        backend_options.extend(repo_backend_options);
-    }
-
-    let backend = rustic_backend::BackendOptions::default()
-        .repository(&repository_options.url)
-        .options(backend_options)
-        .to_backends()
-        .unwrap();
-
-    let mut repo_options = rustic_core::RepositoryOptions::default();
-    match app_options.restic.cache_dir.as_deref() {
-        Some(value) => {
-            repo_options = repo_options.cache_dir(value);
-        }
-        None => {
-            repo_options = repo_options.no_cache(true);
-        }
-    }
-
-    Repository::new(&repo_options, &backend).unwrap()
 }
 
 pub struct CollectMetrics;
