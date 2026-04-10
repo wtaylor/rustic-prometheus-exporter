@@ -398,23 +398,24 @@ checksum = "6bd91ee7b2422bcb158d90ef4d14f75ef67f340943fc4149891dcce8f8b972a3"
 
 [[package]]
 name = "cached"
-version = "0.56.0"
+version = "0.59.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "801927ee168e17809ab8901d9f01f700cd7d8d6a6527997fee44e4b0327a253c"
+checksum = "53b6f5d101f0f6322c8646a45b7c581a673e476329040d97565815c2461dd0c4"
 dependencies = [
  "cached_proc_macro",
  "cached_proc_macro_types",
- "hashbrown 0.15.5",
+ "hashbrown 0.16.1",
  "once_cell",
+ "parking_lot",
  "thiserror",
  "web-time",
 ]
 
 [[package]]
 name = "cached_proc_macro"
-version = "0.25.0"
+version = "0.27.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9225bdcf4e4a9a4c08bf16607908eb2fbf746828d5e0b5e019726dbf6571f201"
+checksum = "8ebcf9c75f17a17d55d11afc98e46167d4790a263f428891b8705ab2f793eca3"
 dependencies = [
  "darling 0.20.11",
  "proc-macro2",
@@ -1887,9 +1888,9 @@ dependencies = [
 
 [[package]]
 name = "kameo"
-version = "0.19.2"
+version = "0.20.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9c4af7638c67029fd6821d02813c3913c803784648725d4df4082c9b91d7cbb1"
+checksum = "b1dfd134d7a2c6ec05ee696dcbf3f7a034bdb97ecc623e981014652dcd124d77"
 dependencies = [
  "downcast-rs",
  "dyn-clone",
@@ -1902,9 +1903,9 @@ dependencies = [
 
 [[package]]
 name = "kameo_macros"
-version = "0.19.0"
+version = "0.20.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a13c324e2d8c8e126e63e66087448b4267e263e6cb8770c56d10a9d0d279d9e2"
+checksum = "16c9002c9ecd16e1636f566c0bf62db48e70d86ed0d0a91b398955e883217a23"
 dependencies = [
  "heck",
  "proc-macro2",
@@ -3172,6 +3173,7 @@ dependencies = [
  "kameo",
  "metrics",
  "metrics-exporter-prometheus",
+ "reqwest",
  "rustic_backend",
  "rustic_core",
  "serde",
@@ -3219,9 +3221,9 @@ checksum = "fbcebf2228827bc4b61cb54dfd84cf43aacf06ca2dfe4c014b136a0e32b876e2"
 
 [[package]]
 name = "rustic_core"
-version = "0.10.1"
+version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a41f013fff085b1cd68ce9389eed23190008914501e4212ed42043e5fc262d03"
+checksum = "00462e6166e20b6870f85b59728caa8756ec4b078b330769d41ed7c928785164"
 dependencies = [
  "aes256ctr_poly1305aes",
  "backon",
