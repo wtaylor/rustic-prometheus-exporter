@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.3](https://github.com/wtaylor/rustic-prometheus-exporter/compare/v0.1.2...v0.1.3) (2026-04-10)
+
+
+### Bug Fixes
+
+* username and password properties non functional ([8e5dcd6](https://github.com/wtaylor/rustic-prometheus-exporter/commit/8e5dcd6a678dcea386c74404d7bae54ef6b50490))
+
 ## [0.1.2](https://github.com/wtaylor/rustic-prometheus-exporter/compare/v0.1.1...v0.1.2) (2026-04-07)
 
 

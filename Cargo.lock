@@ -3164,7 +3164,7 @@ dependencies = [
 
 [[package]]
 name = "rustic-prometheus-exporter"
-version = "0.1.2"
+version = "0.1.3"
 dependencies = [
  "axum",
  "clap",
