@@ -9,6 +9,12 @@ windows_default_inline_shell_args = "pwsh -NoProfile -NonInteractive -Command"
 [tasks."cargo:build"]
 run = "cargo build"
 
+[tasks."cargo:package"]
+run = "cargo package"
+
+[tasks."cargo:publish"]
+run = "cargo publish"
+
 [tasks."package:archive"]
 usage = '''
 arg "<target>"
