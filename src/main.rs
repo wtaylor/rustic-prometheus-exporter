@@ -4,6 +4,7 @@ use axum::{Router, extract::State, routing::get};
 use clap::{Parser, Subcommand};
 use config::{Config, File};
 use kameo::actor::{ActorRef, Spawn};
+use kameo_actors::scheduler::{Scheduler, SetInterval};
 use metrics_exporter_prometheus::{PrometheusBuilder, PrometheusHandle};
 use tokio::signal;
 use tokio_util::sync::CancellationToken;
@@ -78,19 +79,24 @@ async fn main() {
         app_options.http.listen
     );
 
+    let scheduler = Scheduler::spawn(Scheduler::new());
+
     let collector_supervisor = CollectorSupervisor::spawn(CollectorSchedulerArgs {
         app_options: app_options.clone(),
     });
 
-    let _ = collector_supervisor
-        .tell(RequestCollectionMessage {})
-        .send()
-        .await;
+    let collection_interval = SetInterval::new(
+        collector_supervisor.downgrade(),
+        app_options.collector.interval,
+        RequestCollectionMessage,
+    );
+    scheduler.tell(collection_interval).await.unwrap();
 
     axum::serve(listener, app)
         .with_graceful_shutdown(shutdown_signal(
             shutdown_token.clone(),
             collector_supervisor,
+            scheduler,
         ))
         .await
         .unwrap();
@@ -102,7 +108,8 @@ async fn metrics_handler(State(state): State<AppState>) -> String {
 
 async fn shutdown_signal(
     cancellation_token: CancellationToken,
-    scheduler_ref: ActorRef<CollectorSupervisor>,
+    supervisor_ref: ActorRef<CollectorSupervisor>,
+    sheduler_ref: ActorRef<Scheduler>,
 ) {
     let ctrl_c = async {
         signal::ctrl_c()
@@ -128,5 +135,6 @@ async fn shutdown_signal(
 
     info!("shutdown signal received, shutting down");
     cancellation_token.cancel();
-    scheduler_ref.kill();
+    sheduler_ref.kill();
+    supervisor_ref.kill();
 }

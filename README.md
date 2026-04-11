@@ -1,6 +1,6 @@
 # Rustic Prometheus Exporter
 
-A Prometheus exporter for [Restic](https://restic.net/) repository metrics including repository size and last successful backup timestamp. Supports all backends currently [supported by Rustic](https://rustic.cli.rs/docs/comparison-restic.html#supported-storage-backends). Can be configured to scrape multiple repositories concurrently.
+A Prometheus exporter for [Restic](https://restic.net/) repository metrics including repository size and **TODO** last successful backup timestamp. Supports all backends currently [supported by Rustic](https://rustic.cli.rs/docs/comparison-restic.html#supported-storage-backends). Can be configured to scrape multiple repositories concurrently.
 
 🚧 This project is currently pre-alpha software. Use at your own risk and raise issues when encountered. 🚧
 

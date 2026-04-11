@@ -1,9 +1,8 @@
-use std::{backtrace, collections::BTreeMap};
+use std::collections::BTreeMap;
 
 use reqwest::Url;
 use rustic_backend::{SupportedBackend, util::location_to_type_and_path};
 use rustic_core::{Credentials, Repository};
-use tracing::info;
 
 use crate::options::{AppOptions, RepositoryOptions};
 
@@ -43,28 +42,22 @@ pub fn get_repository(
         backend_options.extend(repo_backend_options);
     }
 
-    info!("Aggregated backend options: {:?}", backend_options);
-
     if backend_protocol == SupportedBackend::Rest {
         let mut location_url = Url::parse(&location).unwrap();
         if location_url.username() == "" {
             if let Some(username) = backend_options.get("username") {
-                info!("No username in string, using from options: {}", username);
                 location_url.set_username(username).unwrap();
             }
         }
 
         if location_url.password().is_none() {
             if let Some(password) = backend_options.get("password") {
-                info!("No password in string, using from options: {}", password);
                 location_url.set_password(Some(password)).unwrap();
             }
         }
 
         location = format!("rest:{}", location_url);
     }
-
-    info!("Location URL: {}", location);
 
     let backend = rustic_backend::BackendOptions::default()
         .repository(&location)

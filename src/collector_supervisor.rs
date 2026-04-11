@@ -89,6 +89,7 @@ impl Actor for CollectorSupervisor {
     }
 }
 
+#[derive(Clone)]
 pub struct RequestCollectionMessage;
 
 impl Message<RequestCollectionMessage> for CollectorSupervisor {

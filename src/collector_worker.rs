@@ -1,4 +1,7 @@
-use std::thread::{self, JoinHandle};
+use std::{
+    thread::{self, JoinHandle},
+    time::{Duration, SystemTime},
+};
 
 use kameo::{
     Actor,
@@ -6,7 +9,7 @@ use kameo::{
     error::Infallible,
     prelude::{Context, Message},
 };
-use rustic_core::CheckOptions;
+use rustic_core::{CheckOptions, CheckResults};
 use tokio::sync::mpsc::{self};
 use tracing::info;
 
@@ -65,35 +68,9 @@ impl Message<CollectMetrics> for CollectorWorker {
 
     async fn handle(
         &mut self,
-        _msg: CollectMetrics,
+        msg: CollectMetrics,
         _ctx: &mut Context<Self, Self::Reply>,
     ) -> Self::Reply {
-        // let mut file_size_total = 0;
-        // for file in file_info {
-        //     file_size_total += file.size;
-        // }
-
-        // let mut blob_count_total = 0;
-        // let mut blob_size_total = 0;
-        // let mut blob_size_uncompressed_total = 0;
-        // for blob in infos_index.blobs {
-        //     blob_count_total += blob.count;
-        //     blob_size_total += blob.size;
-        //     blob_size_uncompressed_total += blob.data_size;
-        // }
-        //
-        // self.metric_store.set_check_success(repo_check_result);
-        // self.metric_store.set_total_snapshots(snapshots.len());
-        // self.metric_store.set_size_total(blob_size_total);
-        // self.metric_store
-        //     .set_uncompressed_size_total(blob_size_uncompressed_total);
-        // self.metric_store
-        //     .set_compression_ratio(blob_size_uncompressed_total as f32 / blob_size_total as f32);
-        // self.metric_store.set_blob_count_total(blob_count_total);
-        //
-        // let scrape_duration = scrape_start.elapsed().unwrap().as_secs_f32();
-        // self.metric_store
-        //     .set_scrape_duration_seconds(scrape_duration);
     }
 }
 
@@ -136,7 +113,14 @@ impl Message<InitialiseMessage> for CollectorWorker {
 }
 
 struct RepoStatisticsMessage {
+    scrape_duration: Duration,
     total_snapshots: usize,
+    file_size_total: u64,
+    repo_check_result: CheckResults,
+    blob_count_total: u64,
+    blob_size_total: u64,
+    blob_size_uncompressed_total: u64,
+    compression_ratio: f32,
 }
 
 impl Message<RepoStatisticsMessage> for CollectorWorker {
@@ -147,7 +131,16 @@ impl Message<RepoStatisticsMessage> for CollectorWorker {
         msg: RepoStatisticsMessage,
         _ctx: &mut Context<Self, Self::Reply>,
     ) -> Self::Reply {
+        self.metric_store.set_check_success(msg.repo_check_result);
         self.metric_store.set_total_snapshots(msg.total_snapshots);
+        self.metric_store.set_size_total(msg.blob_size_total);
+        self.metric_store
+            .set_uncompressed_size_total(msg.blob_size_uncompressed_total);
+        self.metric_store
+            .set_compression_ratio(msg.compression_ratio);
+        self.metric_store.set_blob_count_total(msg.blob_count_total);
+        self.metric_store
+            .set_scrape_duration_seconds(msg.scrape_duration.as_secs_f32());
     }
 }
 
@@ -158,16 +151,13 @@ fn process_repo_operations(
     self_handle: ActorRef<CollectorWorker>,
 ) {
     let credentials = get_credentials(&app_options, &repo_options);
-    info!("Opening repo");
     let repository = get_repository(&app_options, &repo_options)
         .open(&credentials)
         .unwrap();
 
     loop {
-        info!("Waiting for message");
         rx.blocking_recv();
-        info!("Received message");
-
+        let scrape_start = SystemTime::now();
         info!("Collecting snapshots");
         let snapshots = repository.get_all_snapshots().unwrap();
         info!("Collecting file info");
@@ -177,9 +167,34 @@ fn process_repo_operations(
         info!("Running integrity checks");
         let repo_check_result = repository.check(CheckOptions::default()).unwrap();
 
+        let mut file_size_total = 0;
+        for file in file_info {
+            file_size_total += file.size;
+        }
+
+        let mut blob_count_total = 0;
+        let mut blob_size_total = 0;
+        let mut blob_size_uncompressed_total = 0;
+        for blob in infos_index.blobs {
+            blob_count_total += blob.count;
+            blob_size_total += blob.size;
+            blob_size_uncompressed_total += blob.data_size;
+        }
+
+        let total_snapshots = snapshots.len();
+        let compression_ratio = blob_size_uncompressed_total as f32 / blob_size_total as f32;
+        let scrape_duration = scrape_start.elapsed().unwrap();
+
         self_handle
             .tell(RepoStatisticsMessage {
-                total_snapshots: snapshots.len(),
+                scrape_duration,
+                file_size_total,
+                repo_check_result,
+                blob_count_total,
+                blob_size_total,
+                blob_size_uncompressed_total,
+                compression_ratio,
+                total_snapshots,
             })
             .blocking_send()
             .unwrap();
