@@ -10,11 +10,11 @@ use tokio_util::sync::CancellationToken;
 use tracing::info;
 
 use crate::{
-    collector_scheduler::{CollectorScheduler, CollectorSchedulerArgs},
+    collector_supervisor::{CollectorSchedulerArgs, CollectorSupervisor, RequestCollectionMessage},
     options::AppOptions,
 };
 
-mod collector_scheduler;
+mod collector_supervisor;
 mod collector_worker;
 mod metric_store;
 mod options;
@@ -78,12 +78,20 @@ async fn main() {
         app_options.http.listen
     );
 
-    let collector_scheduler = CollectorScheduler::spawn(CollectorSchedulerArgs {
+    let collector_supervisor = CollectorSupervisor::spawn(CollectorSchedulerArgs {
         app_options: app_options.clone(),
     });
 
+    let _ = collector_supervisor
+        .tell(RequestCollectionMessage {})
+        .send()
+        .await;
+
     axum::serve(listener, app)
-        .with_graceful_shutdown(shutdown_signal(shutdown_token.clone(), collector_scheduler))
+        .with_graceful_shutdown(shutdown_signal(
+            shutdown_token.clone(),
+            collector_supervisor,
+        ))
         .await
         .unwrap();
 }
@@ -94,7 +102,7 @@ async fn metrics_handler(State(state): State<AppState>) -> String {
 
 async fn shutdown_signal(
     cancellation_token: CancellationToken,
-    scheduler_ref: ActorRef<CollectorScheduler>,
+    scheduler_ref: ActorRef<CollectorSupervisor>,
 ) {
     let ctrl_c = async {
         signal::ctrl_c()

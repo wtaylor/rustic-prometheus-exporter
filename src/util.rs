@@ -1,6 +1,9 @@
+use std::{backtrace, collections::BTreeMap};
+
 use reqwest::Url;
 use rustic_backend::{SupportedBackend, util::location_to_type_and_path};
 use rustic_core::{Credentials, Repository};
+use tracing::info;
 
 use crate::options::{AppOptions, RepositoryOptions};
 
@@ -24,37 +27,44 @@ pub fn get_repository(
 ) -> Repository<()> {
     let (backend_protocol, location) = location_to_type_and_path(&repository_options.url).unwrap();
     let mut location = location.to_string();
-    let backend_protocol_str = backend_protocol.to_string();
 
-    let mut backend_options = app_options
+    let default_backend_options = app_options
         .restic
         .defaults
         .as_ref()
-        .and_then(|d| d.backend_options.as_ref())
-        .and_then(|d| d.get(&backend_protocol_str))
-        .and_then(|d| Some(d.clone()))
-        .unwrap_or_default();
+        .and_then(|d| d.get_options_for_backend(&backend_protocol));
+
+    let mut backend_options = match default_backend_options {
+        Some(defaults) => defaults.clone(),
+        None => BTreeMap::new(),
+    };
 
     if let Some(repo_backend_options) = repository_options.backend_options.clone() {
         backend_options.extend(repo_backend_options);
     }
 
+    info!("Aggregated backend options: {:?}", backend_options);
+
     if backend_protocol == SupportedBackend::Rest {
         let mut location_url = Url::parse(&location).unwrap();
         if location_url.username() == "" {
             if let Some(username) = backend_options.get("username") {
+                info!("No username in string, using from options: {}", username);
                 location_url.set_username(username).unwrap();
             }
         }
 
         if location_url.password().is_none() {
             if let Some(password) = backend_options.get("password") {
+                info!("No password in string, using from options: {}", password);
                 location_url.set_password(Some(password)).unwrap();
             }
         }
 
-        location = location_url.to_string();
+        location = format!("rest:{}", location_url);
     }
+
+    info!("Location URL: {}", location);
 
     let backend = rustic_backend::BackendOptions::default()
         .repository(&location)
