@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.4](https://github.com/wtaylor/rustic-prometheus-exporter/compare/v0.1.3...v0.1.4) (2026-04-11)
+
+
+### Bug Fixes
+
+* blocking async repos (rest, opendal) panicing on thread blocking  ([#15](https://github.com/wtaylor/rustic-prometheus-exporter/issues/15)) ([0581198](https://github.com/wtaylor/rustic-prometheus-exporter/commit/058119846c0d62d00955d851d42040f32673fef8))
+
 ## [0.1.3](https://github.com/wtaylor/rustic-prometheus-exporter/compare/v0.1.2...v0.1.3) (2026-04-10)
 
 
