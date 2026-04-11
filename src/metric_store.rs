@@ -1,4 +1,4 @@
-use metrics::{Counter, Gauge, counter, gauge};
+use metrics::{Gauge, gauge};
 use rustic_core::CheckResults;
 
 #[derive(Default)]

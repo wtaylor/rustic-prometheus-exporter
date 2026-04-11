@@ -1,0 +1,110 @@
+use std::{collections::HashMap, time::Duration};
+
+use kameo::{
+    Actor,
+    actor::{ActorRef, Spawn},
+    error::Infallible,
+    prelude::Message,
+    supervision::{RestartPolicy, SupervisionStrategy},
+};
+use tokio::task::{JoinSet, spawn_blocking};
+use tracing::info;
+
+use crate::{
+    collector_worker::{CollectMetrics, CollectorWorker, CollectorWorkerArgs, InitialiseMessage},
+    options::AppOptions,
+};
+
+pub struct CollectorSchedulerArgs {
+    pub app_options: AppOptions,
+}
+
+pub struct CollectorSupervisor {
+    workers: HashMap<String, ActorRef<CollectorWorker>>,
+}
+
+impl Actor for CollectorSupervisor {
+    type Args = CollectorSchedulerArgs;
+    type Error = Infallible;
+
+    fn supervision_strategy() -> kameo::supervision::SupervisionStrategy {
+        SupervisionStrategy::OneForOne
+    }
+
+    async fn on_start(
+        args: Self::Args,
+        supervisor_ref: kameo::prelude::ActorRef<Self>,
+    ) -> Result<Self, Self::Error> {
+        info!("Starting collector supervisor");
+
+        let worker_options = args.app_options.restic.repositories.iter();
+        let mut worker_spawn_set = JoinSet::new();
+        for options in worker_options {
+            let supervisor_ref = supervisor_ref.clone();
+            let app_options = args.app_options.clone();
+            let options = options.clone();
+            worker_spawn_set.spawn(async move {
+                (
+                    options.name.clone(),
+                    CollectorWorker::supervise(
+                        &supervisor_ref,
+                        CollectorWorkerArgs {
+                            app_options: app_options,
+                            repository_options: options,
+                        },
+                    )
+                    .restart_policy(RestartPolicy::Permanent)
+                    .restart_limit(1, Duration::from_secs(2))
+                    .spawn()
+                    .await,
+                )
+            });
+        }
+
+        let workers: HashMap<String, ActorRef<CollectorWorker>> =
+            worker_spawn_set.join_all().await.into_iter().collect();
+
+        for worker in &workers {
+            worker
+                .1
+                .tell(InitialiseMessage {
+                    self_handle: worker.1.clone(),
+                })
+                .await
+                .unwrap();
+        }
+        Ok(Self { workers })
+    }
+
+    async fn on_stop(
+        &mut self,
+        _actor_ref: kameo::prelude::WeakActorRef<Self>,
+        _reason: kameo::prelude::ActorStopReason,
+    ) -> Result<(), Self::Error> {
+        for worker in self.workers.iter() {
+            worker.1.kill();
+        }
+
+        Ok(())
+    }
+}
+
+#[derive(Clone)]
+pub struct RequestCollectionMessage;
+
+impl Message<RequestCollectionMessage> for CollectorSupervisor {
+    type Reply = ();
+
+    async fn handle(
+        &mut self,
+        _msg: RequestCollectionMessage,
+        _ctx: &mut kameo::prelude::Context<Self, Self::Reply>,
+    ) -> Self::Reply {
+        for worker in self.workers.iter() {
+            let worker = worker.1.clone();
+            spawn_blocking(move || worker.tell(CollectMetrics {}).blocking_send().unwrap())
+                .await
+                .unwrap();
+        }
+    }
+}

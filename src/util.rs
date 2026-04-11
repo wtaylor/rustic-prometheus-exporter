@@ -1,3 +1,5 @@
+use std::collections::BTreeMap;
+
 use reqwest::Url;
 use rustic_backend::{SupportedBackend, util::location_to_type_and_path};
 use rustic_core::{Credentials, Repository};
@@ -24,16 +26,17 @@ pub fn get_repository(
 ) -> Repository<()> {
     let (backend_protocol, location) = location_to_type_and_path(&repository_options.url).unwrap();
     let mut location = location.to_string();
-    let backend_protocol_str = backend_protocol.to_string();
 
-    let mut backend_options = app_options
+    let default_backend_options = app_options
         .restic
         .defaults
         .as_ref()
-        .and_then(|d| d.backend_options.as_ref())
-        .and_then(|d| d.get(&backend_protocol_str))
-        .and_then(|d| Some(d.clone()))
-        .unwrap_or_default();
+        .and_then(|d| d.get_options_for_backend(&backend_protocol));
+
+    let mut backend_options = match default_backend_options {
+        Some(defaults) => defaults.clone(),
+        None => BTreeMap::new(),
+    };
 
     if let Some(repo_backend_options) = repository_options.backend_options.clone() {
         backend_options.extend(repo_backend_options);
@@ -53,7 +56,7 @@ pub fn get_repository(
             }
         }
 
-        location = location_url.to_string();
+        location = format!("rest:{}", location_url);
     }
 
     let backend = rustic_backend::BackendOptions::default()
