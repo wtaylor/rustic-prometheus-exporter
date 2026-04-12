@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.1](https://github.com/wtaylor/rustic-prometheus-exporter/compare/v0.2.0...v0.2.1) (2026-04-12)
+
+
+### Bug Fixes
+
+* image names ([b20b85d](https://github.com/wtaylor/rustic-prometheus-exporter/commit/b20b85d5de95bc9839fbab28b96b41d5e559e57c))
+
 ## [0.2.0](https://github.com/wtaylor/rustic-prometheus-exporter/compare/v0.1.4...v0.2.0) (2026-04-12)
 
 
