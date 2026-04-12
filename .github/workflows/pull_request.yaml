@@ -24,7 +24,7 @@ jobs:
       cache-mode: max
       cache-scope: build-container-pr
       sign: false
-      meta-images: ghcr.io/wtaylor/rust-prometheus-exporter
+      meta-images: ghcr.io/wtaylor/rustic-prometheus-exporter
       meta-tags: |
         type=sha
         type=raw,value=local
