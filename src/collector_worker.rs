@@ -9,9 +9,9 @@ use kameo::{
     error::Infallible,
     prelude::{Context, Message},
 };
-use rustic_core::{CheckOptions, CheckResults};
+use rustic_core::{CheckOptions, CheckResults, ConfigOptions, KeyOptions};
 use tokio::sync::mpsc::{self};
-use tracing::info;
+use tracing::{error, info, warn};
 
 use crate::{
     metric_store::MetricStore,
@@ -68,9 +68,15 @@ impl Message<CollectMetrics> for CollectorWorker {
 
     async fn handle(
         &mut self,
-        msg: CollectMetrics,
+        _msg: CollectMetrics,
         _ctx: &mut Context<Self, Self::Reply>,
     ) -> Self::Reply {
+        self.repo_thread_scrape_request_sender
+            .as_mut()
+            .unwrap()
+            .send(())
+            .await
+            .unwrap();
     }
 }
 
@@ -103,12 +109,6 @@ impl Message<InitialiseMessage> for CollectorWorker {
         });
 
         self.repo_thread = Some(repo_thread);
-        self.repo_thread_scrape_request_sender
-            .as_mut()
-            .unwrap()
-            .send(())
-            .await
-            .unwrap();
     }
 }
 
@@ -151,6 +151,24 @@ fn process_repo_operations(
     self_handle: ActorRef<CollectorWorker>,
 ) {
     let credentials = get_credentials(&app_options, &repo_options);
+    let repository = get_repository(&app_options, &repo_options);
+    if repo_options.initialise {
+        warn!(
+            "Repository configured to initialise, this should only be done against repos you don't care about"
+        );
+        info!("Initialising repository");
+        let init_result = repository.init(
+            &credentials,
+            &KeyOptions::default(),
+            &ConfigOptions::default(),
+        );
+
+        match init_result {
+            Ok(_) => info!("Repository successfully initialised"),
+            Err(_) => error!("Failed to initialise the repository, is it already initialised?"),
+        }
+    }
+
     let repository = get_repository(&app_options, &repo_options)
         .open(&credentials)
         .unwrap();

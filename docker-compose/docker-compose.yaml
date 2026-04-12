@@ -1,0 +1,36 @@
+services:
+  exporter:
+    image: ghcr.io/wtaylor/rustic-prometheus-exporter:latest
+    ports: ["8080:8080"]
+    environment:
+      RPE__RESTIC__DEFAULTS__PASSWORD: restic
+    configs:
+    - source: exporter
+      target: /etc/rustic-prometheus-exporter/config.yaml
+      mode: 0440
+    volumes:
+    - cache:/tmp/rpe-cache
+    - repo:/tmp/my-repo
+configs:
+  exporter:
+    content: |
+      http:
+        listen: 0.0.0.0:8080
+      collector:
+        interval: 30s
+      restic:
+        cache_dir: /tmp/rpe-cache
+        # Let's set this with an environment variable!
+        # defaults:
+        #   password: restic
+        # repositories cannot be overridden with environment variables
+        repositories:
+        - name: my-repo
+          url: /tmp/my-repo
+          # WARNING: Don't use this for your own repositories!
+          # This will initialise your repository with rustic defaults and is purely for ease of testing
+          initialise: true
+volumes:
+  cache: {}
+  # You probably want to use a host directory mount here
+  repo: {}
