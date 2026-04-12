@@ -76,6 +76,36 @@ restic:
       password: my-super-special-password
 ```
 
+### Environment Variables
+
+Most configuration can also be driven via environment variables and follow the structure of the configuration file with a `RPE__` prefix and double underscore (`__`) between levels. For example, to override `restic.defaults.password`, you would use the environment variable: `RPE__RESTIC__DEFAULTS__PASSWORD`.
+
+Due to limitations in the library used for config, specifying repositories via environment is not currently possible given the libraries limitations on lists.
+
+### Repository Backend Examples
+
+#### S3
+
+S3 support is provided by opendal.
+
+Config.yaml:
+
+```yaml
+restic:
+  repositories:
+  - name: my-s3-repo
+    url: opendal:s3
+    initialise: true
+    backend_options:
+      # Use endpoint if you are using a non AWS S3 api
+      endpoint: http://my-alt-s3-server:9090
+      bucket: my-bucket
+      root: my-s3-repo
+      region: eu-west-1
+      access_key_id: my-access-key
+      secret_access_key: my-secret-key
+```
+
 ---
 
 No AI was used in the making of this project, it was all poorly written by hand.

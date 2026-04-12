@@ -60,7 +60,7 @@ pub struct RepositoryOptions {
     pub name: String,
     pub url: String,
     pub password: Option<String>,
-    pub initialise: bool,
+    pub initialise: Option<bool>,
     pub backend_options: Option<BTreeMap<String, String>>,
 }
 

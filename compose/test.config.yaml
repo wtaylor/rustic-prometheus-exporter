@@ -4,10 +4,8 @@ collector:
   interval: 30s
 restic:
   cache_dir: /tmp/rpe-cache
-  # Let's set this with an environment variable!
-  # defaults:
-  #   password: restic
-  # repositories cannot be overridden with environment variables
+  defaults:
+    password: restic
   repositories:
   - name: my-repo
     url: /tmp/my-repo

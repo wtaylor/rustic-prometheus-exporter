@@ -1,0 +1,31 @@
+http:
+  listen: 0.0.0.0:8080
+collector:
+  interval: 30s
+restic:
+  cache_dir: /tmp/rpe-cache
+  defaults:
+    password: restic
+    backend_options:
+      rest:
+        username: my-user
+        password: my-rest-password
+  repositories:
+  - name: my-local-repo
+    url: /tmp/my-local-repo
+    # WARNING: Don't use this for your own repositories!
+    # This will initialise your repository with rustic defaults and is purely for ease of testing
+    initialise: true
+  - name: my-rest-repo
+    url: rest:http://rest-server:8080/my-rest-repo
+    initialise: true
+  - name: my-s3-repo
+    url: opendal:s3
+    initialise: true
+    backend_options:
+      endpoint: http://s3mock:9090
+      bucket: my-bucket
+      root: my-s3-repo
+      region: eu-west-1
+      access_key_id: my-access-key
+      secret_access_key: my-secret-key

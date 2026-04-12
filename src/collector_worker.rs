@@ -152,7 +152,7 @@ fn process_repo_operations(
 ) {
     let credentials = get_credentials(&app_options, &repo_options);
     let repository = get_repository(&app_options, &repo_options);
-    if repo_options.initialise {
+    if repo_options.initialise.is_some_and(|i| i) {
         warn!(
             "Repository configured to initialise, this should only be done against repos you don't care about"
         );
