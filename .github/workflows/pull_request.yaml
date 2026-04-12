@@ -24,6 +24,7 @@ jobs:
       platforms: linux/amd64,linux/arm64
       cache: true
       cache-scope: build-container-pr
+      sign: false
       meta-images: ghcr.io/wtaylor/rust-prometheus-exporter
       meta-tags: |
         type=sha
