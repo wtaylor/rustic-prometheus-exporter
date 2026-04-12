@@ -1,0 +1,3 @@
+FROM docker.io/rclone/rclone:1.73 as rclone
+FROM rustic-prometheus-exporter:local
+COPY --from=rclone /usr/local/bin/rclone /usr/local/bin/rclone

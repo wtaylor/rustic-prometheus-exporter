@@ -28,7 +28,7 @@ jobs:
         token: ${{ secrets.RELEASE_TOKEN }}
         release-type: rust
   build-container:
-    name: Build container
+    name: Build containers
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -37,6 +37,18 @@ jobs:
     if: ${{ needs.release.outputs.release_created }}
     steps:
     - uses: actions/checkout@v6
+    - name: Set up Docker
+      uses: docker/setup-docker-action@v5
+      with:
+        daemon-config: |
+          {
+            "debug": true,
+            "features": {
+              "containerd-snapshotter": true
+            }
+          }
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v4
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v4
     - name: Login to GitHub Container Registry
@@ -51,14 +63,28 @@ jobs:
       with:
         context: .
         file: Containerfile
+        platforms: linux/amd64,linux/arm64
         push: true
+        load: true
         tags: |
           ghcr.io/wtaylor/rustic-prometheus-exporter:latest
           ghcr.io/wtaylor/rustic-prometheus-exporter:${{ needs.release.outputs.version }}
         outputs: type=docker,dest=dist/docker/rust-prometheus-exporter.tar
         cache-from: type=registry,ref=ghcr.io/wtaylor/rustic-prometheus-exporter:buildcache
         cache-to: type=registry,ref=ghcr.io/wtaylor/rustic-prometheus-exporter:buildcache,mode=max
-    - name: Upload container as artifact
+    - name: Layer rclone on container image
+      uses: docker/build-push-action@v7
+      with:
+        context: .
+        file: Containerfile.rclone
+        platforms: linux/amd64,linux/arm64
+        push: true
+        tags: |
+          ghcr.io/wtaylor/rustic-prometheus-exporter:latest-rclone
+          ghcr.io/wtaylor/rustic-prometheus-exporter:${{ needs.release.outputs.version }}-rclone
+        outputs: type=docker,dest=dist/docker/rust-prometheus-exporter-rclone.tar
+        cache-from: type=registry,ref=ghcr.io/wtaylor/rustic-prometheus-exporter:buildcache
+    - name: Upload containers as artifact
       uses: actions/upload-artifact@v6
       with:
         name: container
