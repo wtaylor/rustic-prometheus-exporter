@@ -9,51 +9,25 @@ env:
   MISE_AUTO_INSTALL: false
 jobs:
   build-container:
-    name: Build containers
-    runs-on: ubuntu-latest
+    uses: docker/github-builder/.github/workflows/build.yml@v1
     permissions:
       contents: read
-      packages: write
-    steps:
-    - uses: actions/checkout@v6
-    - name: Set up Docker
-      uses: docker/setup-docker-action@v5
-      with:
-        daemon-config: |
-          {
-            "debug": true,
-            "features": {
-              "containerd-snapshotter": true
-            }
-          }
-    - name: Set up QEMU
-      uses: docker/setup-qemu-action@v4
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v4
-    - name: Login to GitHub Container Registry
-      uses: docker/login-action@v4
-      with:
-        registry: ghcr.io
-        username: ${{ github.repository_owner }}
-        password: ${{ secrets.GITHUB_TOKEN }}
-    - run: mkdir -p dist/docker
-    - name: Build container image
-      uses: docker/build-push-action@v7
-      with:
-        context: .
-        file: Containerfile
-        platforms: linux/amd64,linux/arm64
-        push: false
-        tags: rustic-prometheus-exporter:local
-        cache-from: type=registry,ref=ghcr.io/wtaylor/rustic-prometheus-exporter:buildcache
-    - name: Layer rclone on container image
-      uses: docker/build-push-action@v7
-      with:
-        context: .
-        file: Containerfile.rclone
-        platforms: linux/amd64,linux/arm64
-        push: false
-        tags: rustic-prometheus-exporter:local-rclone
+      id-token: write
+      packages: read
+    with:
+      output: local
+      artifact-upload: true
+      artifact-name: container
+      push: false
+      context: .
+      file: ./Containerfile
+      platforms: linux/amd64,linux/arm64
+      cache: true
+      cache-scope: build-container-pr
+      meta-images: ghcr.io/wtaylor/rust-prometheus-exporter
+      meta-tags: |
+        type=sha
+        type=raw,value=local
   build:
     name: Build binaries
     env:
