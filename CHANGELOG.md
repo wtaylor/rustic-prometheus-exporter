@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.2.0](https://github.com/wtaylor/rustic-prometheus-exporter/compare/v0.1.4...v0.2.0) (2026-04-12)
+
+
+### Features
+
+* auto-initialisation and S3/rest examples ([#19](https://github.com/wtaylor/rustic-prometheus-exporter/issues/19)) ([d50c0e7](https://github.com/wtaylor/rustic-prometheus-exporter/commit/d50c0e729087fdb7207dfd492337a3675f494b77))
+* build containers for arm and include rclone image variant ([#17](https://github.com/wtaylor/rustic-prometheus-exporter/issues/17)) ([d48a86b](https://github.com/wtaylor/rustic-prometheus-exporter/commit/d48a86b19190e99279b2b3dc9e8ba58d0607728d))
+
 ## [0.1.4](https://github.com/wtaylor/rustic-prometheus-exporter/compare/v0.1.3...v0.1.4) (2026-04-11)
 
 
