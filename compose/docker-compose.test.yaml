@@ -1,0 +1,14 @@
+services:
+  exporter:
+    image: ghcr.io/wtaylor/rustic-prometheus-exporter:latest
+    ports: ["8080:8080"]
+    environment:
+      RPE__RESTIC__DEFAULTS__PASSWORD: restic
+    volumes:
+    - ./test.config.yaml:/etc/rustic-prometheus-exporter/config.yaml:z
+    - cache:/tmp/rpe-cache
+    - repo:/tmp/my-repo:z
+volumes:
+  cache: {}
+  # You probably want to use a host directory mount here
+  repo: {}
