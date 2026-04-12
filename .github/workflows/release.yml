@@ -65,7 +65,6 @@ jobs:
         file: Containerfile
         platforms: linux/amd64,linux/arm64
         push: true
-        load: true
         tags: |
           ghcr.io/wtaylor/rustic-prometheus-exporter:latest
           ghcr.io/wtaylor/rustic-prometheus-exporter:${{ needs.release.outputs.version }}

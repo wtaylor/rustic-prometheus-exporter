@@ -43,7 +43,6 @@ jobs:
         context: .
         file: Containerfile
         platforms: linux/amd64,linux/arm64
-        load: true
         push: false
         tags: rustic-prometheus-exporter:local
         outputs: type=docker,dest=dist/docker/rust-prometheus-exporter.tar
