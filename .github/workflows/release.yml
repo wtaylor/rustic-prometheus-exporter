@@ -68,7 +68,6 @@ jobs:
         tags: |
           ghcr.io/wtaylor/rustic-prometheus-exporter:latest
           ghcr.io/wtaylor/rustic-prometheus-exporter:${{ needs.release.outputs.version }}
-        outputs: type=docker,dest=dist/docker/rust-prometheus-exporter.tar
         cache-from: type=registry,ref=ghcr.io/wtaylor/rustic-prometheus-exporter:buildcache
         cache-to: type=registry,ref=ghcr.io/wtaylor/rustic-prometheus-exporter:buildcache,mode=max
     - name: Layer rclone on container image
@@ -81,13 +80,7 @@ jobs:
         tags: |
           ghcr.io/wtaylor/rustic-prometheus-exporter:latest-rclone
           ghcr.io/wtaylor/rustic-prometheus-exporter:${{ needs.release.outputs.version }}-rclone
-        outputs: type=docker,dest=dist/docker/rust-prometheus-exporter-rclone.tar
         cache-from: type=registry,ref=ghcr.io/wtaylor/rustic-prometheus-exporter:buildcache
-    - name: Upload containers as artifact
-      uses: actions/upload-artifact@v6
-      with:
-        name: container
-        path: dist/*
   build:
     name: Build binaries
     env:

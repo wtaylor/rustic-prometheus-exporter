@@ -45,7 +45,6 @@ jobs:
         platforms: linux/amd64,linux/arm64
         push: false
         tags: rustic-prometheus-exporter:local
-        outputs: type=docker,dest=dist/docker/rust-prometheus-exporter.tar
         cache-from: type=registry,ref=ghcr.io/wtaylor/rustic-prometheus-exporter:buildcache
     - name: Layer rclone on container image
       uses: docker/build-push-action@v7
@@ -55,12 +54,6 @@ jobs:
         platforms: linux/amd64,linux/arm64
         push: false
         tags: rustic-prometheus-exporter:local-rclone
-        outputs: type=docker,dest=dist/docker/rust-prometheus-exporter-rclone.tar
-    - name: Upload containers as artifact
-      uses: actions/upload-artifact@v6
-      with:
-        name: container
-        path: dist/*
   build:
     name: Build binaries
     env:
