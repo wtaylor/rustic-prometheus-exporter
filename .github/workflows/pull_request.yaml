@@ -15,9 +15,7 @@ jobs:
       id-token: write
       packages: read
     with:
-      output: local
-      artifact-upload: true
-      artifact-name: container
+      output: image
       push: false
       context: .
       file: ./Containerfile
