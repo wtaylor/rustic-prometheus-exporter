@@ -9,36 +9,25 @@ env:
   MISE_AUTO_INSTALL: false
 jobs:
   build-container:
-    name: Build container
-    runs-on: ubuntu-latest
+    uses: docker/github-builder/.github/workflows/build.yml@v1
     permissions:
       contents: read
-      packages: write
-    steps:
-    - uses: actions/checkout@v6
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v4
-    - name: Login to GitHub Container Registry
-      uses: docker/login-action@v4
-      with:
-        registry: ghcr.io
-        username: ${{ github.repository_owner }}
-        password: ${{ secrets.GITHUB_TOKEN }}
-    - run: mkdir -p dist/docker
-    - name: Build container image
-      uses: docker/build-push-action@v7
-      with:
-        context: .
-        file: Containerfile
-        push: false
-        tags: rustic-prometheus-exporter:local
-        outputs: type=docker,dest=dist/docker/rust-prometheus-exporter.tar
-        cache-from: type=registry,ref=ghcr.io/wtaylor/rustic-prometheus-exporter:buildcache
-    - name: Upload container as artifact
-      uses: actions/upload-artifact@v6
-      with:
-        name: container
-        path: dist/*
+      id-token: write
+      packages: read
+    with:
+      output: image
+      push: false
+      context: .
+      file: ./Containerfile
+      platforms: linux/amd64,linux/arm64
+      cache: true
+      cache-mode: max
+      cache-scope: build-container-pr
+      sign: false
+      meta-images: ghcr.io/wtaylor/rust-prometheus-exporter
+      meta-tags: |
+        type=sha
+        type=raw,value=local
   build:
     name: Build binaries
     env:

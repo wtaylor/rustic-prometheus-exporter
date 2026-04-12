@@ -34,6 +34,6 @@ FROM runtime-base AS runner
 WORKDIR /usr/app
 RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates && rm -rf /var/lib/apt/lists/*
 RUN mkdir -p /etc/rustic-prometheus-operator && chmod 750 /etc/rustic-prometheus-operator
-COPY --from=builder /usr/src/target/release/rustic-prometheus-exporter rustic-prometheus-exporter
-ENTRYPOINT ["/usr/app/rustic-prometheus-exporter"]
+COPY --from=builder /usr/src/target/release/rustic-prometheus-exporter /usr/local/bin/rustic-prometheus-exporter
+ENTRYPOINT ["/usr/local/bin/rustic-prometheus-exporter"]
 CMD [ "-c", "/etc/rustic-prometheus-exporter/config.yaml", "run" ]
