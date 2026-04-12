@@ -1,0 +1,38 @@
+services:
+  s3mock:
+    image: adobe/s3mock:latest
+    environment:
+    - COM_ADOBE_TESTING_S3MOCK_STORE_INITIAL_BUCKETS=my-bucket
+    ports:
+    - 9090:9090
+    - 9191:9191
+  rest-server:
+    image: rclone/rclone:latest
+    command:
+    - serve
+    - restic
+    - --addr
+    - '0.0.0.0:8080'
+    - --user
+    - my-user
+    - --pass
+    - my-rest-password
+    - /tmp/my-rest-data
+  exporter:
+    image: ghcr.io/wtaylor/rustic-prometheus-exporter:latest
+    ports: ['8080:8080']
+    depends_on:
+      s3mock:
+        condition: service_started
+      rest-server:
+        condition: service_started
+    environment:
+      RPE__RESTIC__DEFAULTS__PASSWORD: restic
+    volumes:
+    - ./flex-targets.config.yaml:/etc/rustic-prometheus-exporter/config.yaml:z
+    - cache:/tmp/rpe-cache
+    - local_repo:/tmp/my-local-repo:z
+volumes:
+  cache: {}
+  # You probably want to use a host directory mount here
+  local_repo: {}

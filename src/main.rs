@@ -2,7 +2,7 @@ use std::path::PathBuf;
 
 use axum::{Router, extract::State, routing::get};
 use clap::{Parser, Subcommand};
-use config::{Config, File};
+use config::{Case, Config, File};
 use kameo::actor::{ActorRef, Spawn};
 use kameo_actors::scheduler::{Scheduler, SetInterval};
 use metrics_exporter_prometheus::{PrometheusBuilder, PrometheusHandle};
@@ -56,7 +56,11 @@ async fn main() {
 
     let settings_monitor = Config::builder()
         .add_source(File::from(cli.config))
-        .add_source(config::Environment::with_prefix("RPE"))
+        .add_source(
+            config::Environment::with_prefix("RPE")
+                .separator("__")
+                .convert_case(Case::Lower),
+        )
         .build()
         .unwrap();
 

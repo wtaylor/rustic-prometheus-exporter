@@ -1,0 +1,14 @@
+http:
+  listen: 0.0.0.0:8080
+collector:
+  interval: 30s
+restic:
+  cache_dir: /tmp/rpe-cache
+  defaults:
+    password: restic
+  repositories:
+  - name: my-repo
+    url: /tmp/my-repo
+    # WARNING: Don't use this for your own repositories!
+    # This will initialise your repository with rustic defaults and is purely for ease of testing
+    initialise: true
