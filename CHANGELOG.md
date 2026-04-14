@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.2](https://github.com/wtaylor/rustic-prometheus-exporter/compare/v0.2.1...v0.2.2) (2026-04-14)
+
+
+### Bug Fixes
+
+* refactor metrics into an exporter ([#21](https://github.com/wtaylor/rustic-prometheus-exporter/issues/21)) ([b7a399b](https://github.com/wtaylor/rustic-prometheus-exporter/commit/b7a399b20ad8b824b97a6dd14de80863cb3bcd57))
+
 ## [0.2.1](https://github.com/wtaylor/rustic-prometheus-exporter/compare/v0.2.0...v0.2.1) (2026-04-12)
 
 
