@@ -1,5 +1,6 @@
 use std::path::PathBuf;
 
+use anyhow::{Context, Ok, Result};
 use axum::{Router, extract::State, routing::get};
 use clap::{Parser, Subcommand};
 use config::{Case, Config, File};
@@ -7,17 +8,19 @@ use kameo::actor::{ActorRef, Spawn};
 use kameo_actors::scheduler::{Scheduler, SetInterval};
 use metrics_exporter_prometheus::{PrometheusBuilder, PrometheusHandle};
 use tokio::signal;
-use tokio_util::sync::CancellationToken;
 use tracing::info;
 
 use crate::{
-    collector_supervisor::{CollectorSchedulerArgs, CollectorSupervisor, RequestCollectionMessage},
+    actors::{
+        collector_supervisor::{
+            CollectorSupervisor, CollectorSupervisorArgs, messages::RequestCollectionMessage,
+        },
+        metrics_exporter::MetricsExporter,
+    },
     options::AppOptions,
 };
 
-mod collector_supervisor;
-mod collector_worker;
-mod metric_store;
+mod actors;
 mod options;
 mod util;
 
@@ -44,66 +47,71 @@ struct AppState {
     metrics_handle: PrometheusHandle,
 }
 
-#[tokio::main]
-async fn main() {
-    tracing_subscriber::fmt().init();
-
-    let shutdown_token = CancellationToken::new();
-
-    let cli = Cli::parse();
-
-    info!("starting up exporter");
-
-    let settings_monitor = Config::builder()
-        .add_source(File::from(cli.config))
+fn get_config(config_path: PathBuf) -> Result<AppOptions> {
+    let config = Config::builder()
+        .add_source(File::from(config_path))
         .add_source(
             config::Environment::with_prefix("RPE")
                 .separator("__")
                 .convert_case(Case::Lower),
         )
-        .build()
-        .unwrap();
+        .build()?;
 
-    let app_options = settings_monitor.try_deserialize::<AppOptions>().unwrap();
+    Ok(config.try_deserialize::<AppOptions>()?)
+}
 
-    let metrics_handle = PrometheusBuilder::new().install_recorder().unwrap();
+#[tokio::main]
+async fn main() -> Result<()> {
+    tracing_subscriber::fmt().init();
+
+    let cli = Cli::parse();
+
+    info!("reading config from: {:?}", cli.config);
+
+    let config = get_config(cli.config.clone()).with_context(|| {
+        format!(
+            "failed to derive a valid configuration from {:?}",
+            cli.config
+        )
+    })?;
+
+    let metrics_handle = PrometheusBuilder::new()
+        .install_recorder()
+        .with_context(|| "failed to setup the prometheus recorder")?;
+
     let state = AppState { metrics_handle };
 
     let app = Router::new()
         .route("/metrics", get(metrics_handler))
         .with_state(state);
 
-    let listener = tokio::net::TcpListener::bind(app_options.http.listen)
-        .await
-        .unwrap();
+    let listener = tokio::net::TcpListener::bind(config.http.listen).await?;
 
-    info!("listening on {}", app_options.http.listen);
+    info!("listening on {}", config.http.listen);
     info!(
         "metrics endpoint is available at http://{}/metrics",
-        app_options.http.listen
+        config.http.listen
     );
 
-    let scheduler = Scheduler::spawn(Scheduler::new());
-
-    let collector_supervisor = CollectorSupervisor::spawn(CollectorSchedulerArgs {
-        app_options: app_options.clone(),
+    let metrics_exporter = MetricsExporter::spawn(());
+    let collector_supervisor = CollectorSupervisor::spawn(CollectorSupervisorArgs {
+        app_options: config.clone(),
+        metrics_exporter_ref: metrics_exporter,
     });
 
+    let scheduler = Scheduler::spawn(Scheduler::new());
     let collection_interval = SetInterval::new(
         collector_supervisor.downgrade(),
-        app_options.collector.interval,
+        config.collector.interval,
         RequestCollectionMessage,
     );
     scheduler.tell(collection_interval).await.unwrap();
 
     axum::serve(listener, app)
-        .with_graceful_shutdown(shutdown_signal(
-            shutdown_token.clone(),
-            collector_supervisor,
-            scheduler,
-        ))
-        .await
-        .unwrap();
+        .with_graceful_shutdown(shutdown_signal(collector_supervisor, scheduler))
+        .await?;
+
+    Ok(())
 }
 
 async fn metrics_handler(State(state): State<AppState>) -> String {
@@ -111,7 +119,6 @@ async fn metrics_handler(State(state): State<AppState>) -> String {
 }
 
 async fn shutdown_signal(
-    cancellation_token: CancellationToken,
     supervisor_ref: ActorRef<CollectorSupervisor>,
     sheduler_ref: ActorRef<Scheduler>,
 ) {
@@ -138,7 +145,6 @@ async fn shutdown_signal(
     }
 
     info!("shutdown signal received, shutting down");
-    cancellation_token.cancel();
     sheduler_ref.kill();
     supervisor_ref.kill();
 }

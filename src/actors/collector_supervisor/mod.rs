@@ -1,22 +1,27 @@
 use std::{collections::HashMap, time::Duration};
 
+pub mod messages;
+
 use kameo::{
     Actor,
     actor::{ActorRef, Spawn},
     error::Infallible,
-    prelude::Message,
     supervision::{RestartPolicy, SupervisionStrategy},
 };
-use tokio::task::{JoinSet, spawn_blocking};
+use tokio::task::JoinSet;
 use tracing::info;
 
 use crate::{
-    collector_worker::{CollectMetrics, CollectorWorker, CollectorWorkerArgs, InitialiseMessage},
+    actors::{
+        collector_worker::{CollectorWorker, CollectorWorkerArgs},
+        metrics_exporter::MetricsExporter,
+    },
     options::AppOptions,
 };
 
-pub struct CollectorSchedulerArgs {
+pub struct CollectorSupervisorArgs {
     pub app_options: AppOptions,
+    pub metrics_exporter_ref: ActorRef<MetricsExporter>,
 }
 
 pub struct CollectorSupervisor {
@@ -24,7 +29,7 @@ pub struct CollectorSupervisor {
 }
 
 impl Actor for CollectorSupervisor {
-    type Args = CollectorSchedulerArgs;
+    type Args = CollectorSupervisorArgs;
     type Error = Infallible;
 
     fn supervision_strategy() -> kameo::supervision::SupervisionStrategy {
@@ -42,6 +47,7 @@ impl Actor for CollectorSupervisor {
         for options in worker_options {
             let supervisor_ref = supervisor_ref.clone();
             let app_options = args.app_options.clone();
+            let exporter_ref = args.metrics_exporter_ref.clone();
             let options = options.clone();
             worker_spawn_set.spawn(async move {
                 (
@@ -49,6 +55,7 @@ impl Actor for CollectorSupervisor {
                     CollectorWorker::supervise(
                         &supervisor_ref,
                         CollectorWorkerArgs {
+                            exporter_ref: exporter_ref,
                             app_options: app_options,
                             repository_options: options,
                         },
@@ -64,15 +71,6 @@ impl Actor for CollectorSupervisor {
         let workers: HashMap<String, ActorRef<CollectorWorker>> =
             worker_spawn_set.join_all().await.into_iter().collect();
 
-        for worker in &workers {
-            worker
-                .1
-                .tell(InitialiseMessage {
-                    self_handle: worker.1.clone(),
-                })
-                .await
-                .unwrap();
-        }
         Ok(Self { workers })
     }
 
@@ -86,25 +84,5 @@ impl Actor for CollectorSupervisor {
         }
 
         Ok(())
-    }
-}
-
-#[derive(Clone)]
-pub struct RequestCollectionMessage;
-
-impl Message<RequestCollectionMessage> for CollectorSupervisor {
-    type Reply = ();
-
-    async fn handle(
-        &mut self,
-        _msg: RequestCollectionMessage,
-        _ctx: &mut kameo::prelude::Context<Self, Self::Reply>,
-    ) -> Self::Reply {
-        for worker in self.workers.iter() {
-            let worker = worker.1.clone();
-            spawn_blocking(move || worker.tell(CollectMetrics {}).blocking_send().unwrap())
-                .await
-                .unwrap();
-        }
     }
 }
