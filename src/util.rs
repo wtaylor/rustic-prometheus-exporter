@@ -1,33 +1,31 @@
 use std::collections::BTreeMap;
 
+use anyhow::{Context, Result, bail};
 use reqwest::Url;
 use rustic_backend::{SupportedBackend, util::location_to_type_and_path};
 use rustic_core::{Credentials, Repository};
-use tracing::info;
 
 use crate::options::{AppOptions, RepositoryOptions};
 
 pub fn get_credentials(
     app_options: &AppOptions,
     repository_options: &RepositoryOptions,
-) -> Credentials {
-    let password = app_options
+) -> Option<Credentials> {
+    app_options
         .restic
         .defaults
         .as_ref()
         .and_then(|d| d.password.as_ref())
         .or(repository_options.password.as_ref())
-        .unwrap();
-    Credentials::password(password)
+        .and_then(|password| Some(Credentials::password(password)))
 }
 
 pub fn get_repository(
     app_options: &AppOptions,
     repository_options: &RepositoryOptions,
-) -> Repository<()> {
-    let (backend_protocol, path) = location_to_type_and_path(&repository_options.url).unwrap();
+) -> Result<Repository<()>> {
+    let (backend_protocol, path) = location_to_type_and_path(&repository_options.url)?;
     let mut location = repository_options.url.clone();
-    info!("Repository is a {}", backend_protocol.to_string());
 
     let default_backend_options = app_options
         .restic
@@ -45,16 +43,21 @@ pub fn get_repository(
     }
 
     if backend_protocol == SupportedBackend::Rest {
-        let mut location_url = Url::parse(&path).unwrap();
+        let mut location_url = Url::parse(&path)
+            .with_context(|| "failed to parse url for rest backend, is it malformed?")?;
         if location_url.username() == "" {
             if let Some(username) = backend_options.get("username") {
-                location_url.set_username(username).unwrap();
+                if location_url.set_username(username).is_err() {
+                    bail!("failed to set username on rest backend url, is it malformed?");
+                }
             }
         }
 
         if location_url.password().is_none() {
             if let Some(password) = backend_options.get("password") {
-                location_url.set_password(Some(password)).unwrap();
+                if location_url.set_password(Some(password)).is_err() {
+                    bail!("failed to set password on rest backend url, is it malformed?");
+                }
             }
         }
 
@@ -65,7 +68,7 @@ pub fn get_repository(
         .repository(&location)
         .options(backend_options)
         .to_backends()
-        .unwrap();
+        .with_context(|| "failed to construct backend")?;
 
     let mut repo_options = rustic_core::RepositoryOptions::default();
     match app_options.restic.cache_dir.as_deref() {
@@ -77,5 +80,6 @@ pub fn get_repository(
         }
     }
 
-    Repository::new(&repo_options, &backend).unwrap()
+    Ok(Repository::new(&repo_options, &backend)
+        .with_context(|| "failed to construct repository from backend")?)
 }
