@@ -1,5 +1,4 @@
 use kameo::prelude::Message;
-use tokio::task::spawn_blocking;
 
 use crate::actors::collector_supervisor::CollectorSupervisor;
 use crate::actors::collector_worker::messages::CollectMetricsMessage;
@@ -17,14 +16,7 @@ impl Message<RequestCollectionMessage> for CollectorSupervisor {
     ) -> Self::Reply {
         for worker in self.workers.iter() {
             let worker = worker.1.clone();
-            spawn_blocking(move || {
-                worker
-                    .tell(CollectMetricsMessage {})
-                    .blocking_send()
-                    .unwrap()
-            })
-            .await
-            .unwrap();
+            worker.tell(CollectMetricsMessage {}).await.unwrap();
         }
     }
 }

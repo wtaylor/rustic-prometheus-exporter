@@ -105,7 +105,7 @@ async fn main() -> Result<()> {
         config.collector.interval,
         RequestCollectionMessage,
     );
-    scheduler.tell(collection_interval).await.unwrap();
+    scheduler.tell(collection_interval).await?;
 
     axum::serve(listener, app)
         .with_graceful_shutdown(shutdown_signal(collector_supervisor, scheduler))
