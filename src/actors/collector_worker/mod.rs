@@ -13,7 +13,7 @@ use crate::{
         MetricsExporter,
         messages::{
             PostRepositoryMetricsMessage, RepositoryMetricsSnapshot, RepositoryRef,
-            ScrapeMetricsSnapshot,
+            ScrapeMetricsSnapshot, SnapshotMetricsSnapshot,
         },
     },
     options::{AppOptions, RepositoryOptions},
@@ -115,6 +115,26 @@ fn process_repo_operations(
         }
 
         let total_snapshots = snapshots.len();
+        let last_snapshot = snapshots.first();
+        let last_snapshot_metrics = match last_snapshot.and_then(|s| s.summary.as_ref()) {
+            Some(snapshot) => Some(SnapshotMetricsSnapshot {
+                started_ms: snapshot.backup_start.timestamp().as_millisecond(),
+                finished_ms: snapshot.backup_end.timestamp().as_millisecond(),
+                duration_ms: snapshot.backup_duration,
+                files_new: snapshot.files_new,
+                files_changed: snapshot.files_changed,
+                files_unmodified: snapshot.files_unmodified,
+                files_total: snapshot.total_files_processed,
+                dirs_new: snapshot.dirs_new,
+                dirs_changed: snapshot.dirs_changed,
+                dirs_unmodified: snapshot.dirs_unmodified,
+                dirs_total: snapshot.total_dirs_processed,
+                size_total_bytes: snapshot.total_bytes_processed,
+                size_added_bytes: snapshot.data_added_files,
+            }),
+            None => None,
+        };
+
         let scrape_duration = scrape_start.elapsed().unwrap();
 
         let repository_metrics = RepositoryMetricsSnapshot {
@@ -131,6 +151,7 @@ fn process_repo_operations(
             .tell(PostRepositoryMetricsMessage {
                 repository_ref: repository_ref.clone(),
                 repository_metrics,
+                last_snapshot_metrics,
                 scrape_metrics,
             })
             .blocking_send()
