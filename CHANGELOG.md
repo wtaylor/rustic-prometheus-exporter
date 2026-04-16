@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.3.0](https://github.com/wtaylor/rustic-prometheus-exporter/compare/v0.2.2...v0.3.0) (2026-04-16)
+
+
+### Features
+
+* add basic worker restart in case of errors ([#25](https://github.com/wtaylor/rustic-prometheus-exporter/issues/25)) ([6d4a11d](https://github.com/wtaylor/rustic-prometheus-exporter/commit/6d4a11d8418de3e8dcdaee0c1fb025c27cdc7d0d))
+* add snapshot metrics ([#23](https://github.com/wtaylor/rustic-prometheus-exporter/issues/23)) ([3db692d](https://github.com/wtaylor/rustic-prometheus-exporter/commit/3db692dcd6e82fa80f8fc8ada47d3b7e94e53c2e))
+
 ## [0.2.2](https://github.com/wtaylor/rustic-prometheus-exporter/compare/v0.2.1...v0.2.2) (2026-04-14)
 
 
